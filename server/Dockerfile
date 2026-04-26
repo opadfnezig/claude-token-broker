@@ -1,6 +1,10 @@
 FROM node:22-alpine AS build
 WORKDIR /repo
 
+# Build deps for native modules (better-sqlite3). Alpine = musl so the
+# prebuilt artifacts don't apply; we compile from source.
+RUN apk add --no-cache python3 make g++
+
 RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
 
 # Workspace skeleton
@@ -19,7 +23,7 @@ RUN pnpm --filter @ctb/shared build && pnpm --filter @ctb/server build
 FROM node:22-alpine AS runtime
 WORKDIR /app
 
-RUN apk add --no-cache su-exec
+RUN apk add --no-cache su-exec libstdc++
 
 RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
 
