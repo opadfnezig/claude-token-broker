@@ -1,0 +1,21 @@
+{
+  "name": "@ctb/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@ctb/shared": "workspace:*",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.0.0"
+  }
+}

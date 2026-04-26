@@ -1,0 +1,25 @@
+name: ctb-client
+
+services:
+  client:
+    build:
+      context: ..
+      dockerfile: client/Dockerfile
+    container_name: ctb-client
+    restart: unless-stopped
+    environment:
+      CTB_SERVER_URL: ${CTB_SERVER_URL:?CTB_SERVER_URL is required}
+      CTB_SERVER_PUBKEY: ${CTB_SERVER_PUBKEY:?CTB_SERVER_PUBKEY is required}
+      CTB_CALLBACK_URL: ${CTB_CALLBACK_URL:?CTB_CALLBACK_URL is required}
+      CTB_CALLBACK_PORT: ${CTB_CALLBACK_PORT:-9991}
+      CTB_SYNC_INTERVAL_MS: ${CTB_SYNC_INTERVAL_MS:-300000}
+    ports:
+      - "${CTB_CALLBACK_PORT:-9991}:9991"
+    volumes:
+      # Where the local CLI looks for credentials. Other containers on this
+      # host RO-mount this same path. ALWAYS bind the FILE (not the parent
+      # dir) so other containers can mount the credential file specifically.
+      - ${CTB_CREDENTIALS_OUT:-/var/lib/agentforge-creds}/credentials.json:/out/credentials.json
+      - ${CTB_CREDENTIALS_OUT:-/var/lib/agentforge-creds}/claude.json:/out/claude.json
+      # Persistent client keypair.
+      - ./data:/data

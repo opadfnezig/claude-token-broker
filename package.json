@@ -1,0 +1,7 @@
+{
+  "name": "claude-token-broker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Centralized OAuth credential broker for Claude across multiple hosts",
+  "packageManager": "pnpm@10.27.0"
+}

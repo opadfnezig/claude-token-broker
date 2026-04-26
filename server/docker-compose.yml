@@ -1,0 +1,20 @@
+name: claude-token-broker
+
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    container_name: ctb-server
+    restart: unless-stopped
+    environment:
+      CTB_PORT: ${CTB_PORT:-9990}
+      CTB_PUSH_TIMEOUT_MS: ${CTB_PUSH_TIMEOUT_MS:-5000}
+      CTB_PUSH_MAX_FAILURES: ${CTB_PUSH_MAX_FAILURES:-3}
+    ports:
+      - "${CTB_PORT:-9990}:9990"
+    volumes:
+      # Mirror written by the host's systemd refresh service.
+      - ${CTB_MIRROR_DIR:-/var/lib/claude-token-broker}:/mirror:ro
+      # Persistent state: server keypair + sqlite client/subscription db.
+      - ./data:/data
