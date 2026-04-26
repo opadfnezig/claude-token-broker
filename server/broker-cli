@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Wrapper around the broker admin CLI. Runs inside the running server
+# container so it shares the sqlite db + keypair via the mounted /data
+# volume — no host Node, no native build chain.
+#
+# Usage: ./broker-cli add <name> <pubkey>
+#        ./broker-cli list
+#        ./broker-cli remove <name>
+#        ./broker-cli pubkey
+set -euo pipefail
+cd "$(dirname "$0")"
+exec docker compose exec -T -e CTB_DATA_DIR=/data server \
+  node /app/cli/dist/index.js "$@"

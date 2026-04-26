@@ -11,14 +11,21 @@ RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
 COPY package.json pnpm-workspace.yaml ./
 COPY shared/package.json shared/
 COPY server/package.json server/
+COPY cli/package.json cli/
 
-RUN pnpm install --frozen-lockfile=false --filter @ctb/server... --filter @ctb/shared
+RUN pnpm install --frozen-lockfile=false \
+      --filter @ctb/server... \
+      --filter @ctb/cli... \
+      --filter @ctb/shared
 
 # Source
 COPY shared/ shared/
 COPY server/ server/
+COPY cli/ cli/
 
-RUN pnpm --filter @ctb/shared build && pnpm --filter @ctb/server build
+RUN pnpm --filter @ctb/shared build \
+ && pnpm --filter @ctb/server build \
+ && pnpm --filter @ctb/cli build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
@@ -32,9 +39,12 @@ COPY --from=build /repo/shared/package.json shared/
 COPY --from=build /repo/shared/dist shared/dist
 COPY --from=build /repo/server/package.json server/
 COPY --from=build /repo/server/dist server/dist
+COPY --from=build /repo/cli/package.json cli/
+COPY --from=build /repo/cli/dist cli/dist
 COPY --from=build /repo/node_modules ./node_modules
 COPY --from=build /repo/server/node_modules server/node_modules
 COPY --from=build /repo/shared/node_modules shared/node_modules
+COPY --from=build /repo/cli/node_modules cli/node_modules
 
 ENV CTB_DB_PATH=/data/clients.sqlite \
     CTB_KEYS_PATH=/data/server-keypair.json \
