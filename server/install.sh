@@ -31,11 +31,36 @@ if [[ ! -f "$CLAUDE_HOME/.claude/.credentials.json" ]]; then
   exit 1
 fi
 
-CLAUDE_BIN=$(sudo -u "$CLAUDE_USER" -i which claude 2>/dev/null || true)
+# Resolve absolute path for claude. Falling back to the bare name "claude"
+# is a trap — systemd's PATH typically doesn't include $HOME/.local/bin,
+# and the service will silently fail with exit 127 every refresh tick.
+#
+# We try, in order:
+#   1. login shell of CLAUDE_USER (`bash -lc 'command -v claude'`)
+#   2. interactive shell (`bash -ic 'command -v claude'`) — picks up .bashrc
+#      where ~/.local/bin is often added on Arch-flavored distros
+#   3. common explicit paths
+CLAUDE_BIN=""
+for cmd in 'bash -lc "command -v claude"' 'bash -ic "command -v claude"'; do
+  candidate=$(sudo -u "$CLAUDE_USER" -- bash -c "$cmd" 2>/dev/null || true)
+  if [[ -n "$candidate" ]] && [[ -x "$candidate" ]]; then
+    CLAUDE_BIN="$candidate"
+    break
+  fi
+done
 if [[ -z "$CLAUDE_BIN" ]]; then
-  echo "WARN: 'claude' CLI not in $CLAUDE_USER's PATH; service may fail." >&2
-  CLAUDE_BIN="claude"
+  for p in "$CLAUDE_HOME/.local/bin/claude" /usr/local/bin/claude /usr/bin/claude /snap/bin/claude; do
+    [[ -x "$p" ]] && CLAUDE_BIN="$p" && break
+  done
 fi
+if [[ -z "$CLAUDE_BIN" ]]; then
+  echo "ERROR: 'claude' binary not found for user '$CLAUDE_USER'." >&2
+  echo "       Searched: \$PATH (login + interactive shell), $CLAUDE_HOME/.local/bin/claude," >&2
+  echo "                /usr/local/bin/claude, /usr/bin/claude, /snap/bin/claude" >&2
+  echo "       Install Claude Code CLI for $CLAUDE_USER and rerun." >&2
+  exit 1
+fi
+echo "Resolved claude binary: $CLAUDE_BIN"
 
 echo "Installing claude-token-broker-refresh.service (user=$CLAUDE_USER, mirror=$MIRROR_DIR)..."
 sudo install -m 755 refresh.sh /usr/local/bin/claude-token-broker-refresh.sh

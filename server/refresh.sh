@@ -41,12 +41,19 @@ mirror_creds() {
 }
 
 trigger_refresh() {
-  echo "[ctb-refresh] triggering refresh" >&2
-  if flock -n "$LOCK" "$CLAUDE_BIN" -p "ok" --max-turns 1 >/dev/null 2>&1; then
+  echo "[ctb-refresh] triggering refresh (CLAUDE_BIN=$CLAUDE_BIN)" >&2
+  # Capture stdout+stderr so failures are diagnosable in the journal.
+  # We only care about exit code, but losing the error text would mean
+  # debugging blind — that's how the bare-binary-name regression got
+  # hidden for a day.
+  local out rc
+  out=$(flock -n "$LOCK" "$CLAUDE_BIN" -p "ok" --max-turns 1 2>&1)
+  rc=$?
+  if [ "$rc" -eq 0 ]; then
     echo "[ctb-refresh] refresh ok" >&2
     return 0
   else
-    echo "[ctb-refresh] refresh failed" >&2
+    echo "[ctb-refresh] refresh failed (exit=$rc): ${out:0:500}" >&2
     return 1
   fi
 }
